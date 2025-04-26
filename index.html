@@ -2,128 +2,152 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>My Money Manager</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ranisesh Money Manager v01</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 1rem; background: #f5f5f5; }
-    h1 { text-align: center; }
-    .section { margin-bottom: 1rem; }
-    select, input, button { width: 100%; padding: 0.5rem; margin-top: 0.5rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-    th { background-color: #eee; }
-    .total { font-weight: bold; margin-top: 1rem; text-align: center; }
-    @media (min-width: 600px) {
-      select, input, button { width: auto; display: inline-block; margin-right: 0.5rem; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+      background: #f7f7f7;
+    }
+    h1 {
+      color: #333;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 10px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      background: white;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background: #eee;
     }
   </style>
 </head>
 <body>
 
-<h1>My Money Manager 💰</h1>
+<h1>💸 Ranisesh Money Manager v01</h1>
 
-<div class="section">
-  <label for="type">Select Type:</label>
-  <select id="type" onchange="updateCategories()">
-    <option value="">-- Select --</option>
+<!-- Form Section -->
+<div>
+  <input type="date" id="date" required>
+  <select id="type">
     <option value="income">Income</option>
     <option value="expense">Expense</option>
   </select>
-
-  <label for="category">Select Category:</label>
   <select id="category">
-    <option value="">-- Select Category --</option>
+    <!-- Categories will load dynamically based on type -->
   </select>
-
-  <input type="number" id="amount" placeholder="Enter Amount">
+  <input type="number" id="amount" placeholder="Amount" required>
   <button onclick="addTransaction()">Add</button>
 </div>
 
-<div class="section">
-  <h3>Transaction History</h3>
-  <table id="historyTable">
-    <thead>
-      <tr><th>Date</th><th>Type</th><th>Category</th><th>Amount</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+<!-- Transactions Table -->
+<table id="transactions">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Category</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-<div class="section total">
-  <div id="incomeTotal">Total Income: ₹0</div>
-  <div id="expenseTotal">Total Expense: ₹0</div>
-  <div id="balance">Balance: ₹0</div>
-</div>
+<!-- Summary -->
+<h3 id="summary"></h3>
 
 <script>
-const incomeCategories = [
-  "Salary", "Bonus", "Extra Income", "Payment Received"
-];
-const expenseCategories = [
-  "Groceries", "Hotel", "Clothing", "Fees", "Electricity", "Maintenance", 
-  "Drinks", "Cigarettes and Pan", "Petrol/Diesel", "Auto/Bus", "EMI", "Loans Paid"
-];
+  const incomeCategories = ["Salary", "Bonus", "Extra Income", "Payment Received"];
+  const expenseCategories = ["Groceries", "Hotel", "Clothing", "Fees", "Electricity", "Maintenance", "Drinks", "Cigarettes/Pan", "Petrol/Diesel", "Auto/Bus", "EMI", "Loans Paid"];
 
-let transactions = [];
+  let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 
-function updateCategories() {
-  const type = document.getElementById('type').value;
-  const categorySelect = document.getElementById('category');
-  categorySelect.innerHTML = '<option value="">-- Select Category --</option>';
-  let categories = [];
+  function updateCategoryOptions() {
+    const type = document.getElementById('type').value;
+    const categorySelect = document.getElementById('category');
+    categorySelect.innerHTML = '';
 
-  if (type === 'income') categories = incomeCategories;
-  else if (type === 'expense') categories = expenseCategories;
-
-  categories.forEach(cat => {
-    const option = document.createElement('option');
-    option.value = cat;
-    option.textContent = cat;
-    categorySelect.appendChild(option);
-  });
-}
-
-function addTransaction() {
-  const type = document.getElementById('type').value;
-  const category = document.getElementById('category').value;
-  const amount = parseFloat(document.getElementById('amount').value);
-
-  if (!type || !category || isNaN(amount)) {
-    alert("Please fill all fields!");
-    return;
+    const categories = type === 'income' ? incomeCategories : expenseCategories;
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat;
+      option.textContent = cat;
+      categorySelect.appendChild(option);
+    });
   }
 
-  transactions.push({
-    date: new Date().toLocaleDateString(),
-    type, category, amount
-  });
+  function addTransaction() {
+    const date = document.getElementById('date').value;
+    const type = document.getElementById('type').value;
+    const category = document.getElementById('category').value;
+    const amount = parseFloat(document.getElementById('amount').value);
 
-  document.getElementById('amount').value = '';
-  document.getElementById('type').value = '';
-  updateCategories();
-  updateTable();
-}
+    if (!date || !amount) {
+      alert('Please fill all fields!');
+      return;
+    }
 
-function updateTable() {
-  const tbody = document.querySelector("#historyTable tbody");
-  tbody.innerHTML = '';
+    const transaction = { date, type, category, amount };
+    transactions.push(transaction);
 
-  let incomeTotal = 0;
-  let expenseTotal = 0;
+    localStorage.setItem('transactions', JSON.stringify(transactions));
 
-  transactions.forEach(tx => {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${tx.date}</td><td>${tx.type}</td><td>${tx.category}</td><td>₹${tx.amount.toFixed(2)}</td>`;
-    tbody.appendChild(row);
+    document.getElementById('date').value = '';
+    document.getElementById('amount').value = '';
 
-    if (tx.type === 'income') incomeTotal += tx.amount;
-    else if (tx.type === 'expense') expenseTotal += tx.amount;
-  });
+    renderTransactions();
+  }
 
-  document.getElementById('incomeTotal').innerText = `Total Income: ₹${incomeTotal.toFixed(2)}`;
-  document.getElementById('expenseTotal').innerText = `Total Expense: ₹${expenseTotal.toFixed(2)}`;
-  document.getElementById('balance').innerText = `Balance: ₹${(incomeTotal - expenseTotal).toFixed(2)}`;
-}
+  function renderTransactions() {
+    const tbody = document.querySelector('#transactions tbody');
+    tbody.innerHTML = '';
+
+    let totalIncome = 0;
+    let totalExpense = 0;
+
+    transactions.forEach(tx => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${tx.date}</td>
+        <td>${tx.type}</td>
+        <td>${tx.category}</td>
+        <td>${tx.amount}</td>
+      `;
+      tbody.appendChild(tr);
+
+      if (tx.type === 'income') {
+        totalIncome += tx.amount;
+      } else {
+        totalExpense += tx.amount;
+      }
+    });
+
+    const balance = totalIncome - totalExpense;
+
+    document.getElementById('summary').innerHTML = `
+      💰 Total Income: ₹${totalIncome.toFixed(2)} |
+      💸 Total Expenses: ₹${totalExpense.toFixed(2)} |
+      🧮 Balance: ₹${balance.toFixed(2)}
+    `;
+  }
+
+  document.getElementById('type').addEventListener('change', updateCategoryOptions);
+
+  // Initialize
+  updateCategoryOptions();
+  renderTransactions();
 </script>
 
 </body>
